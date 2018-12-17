@@ -2,16 +2,14 @@
 #include <list>
 #include <algorithm>
 #include <deque>
+#include <iterator>
 
 using namespace std;
 
 int main(int argc, char** argv) {
 
-	const int numRecipesAfter = 18;
-	int n = numRecipesAfter;
-	n-=2; // we have 3,7 already
-	n-=1; // 0 based indices
-	n+= 10;
+	int numRecipesAfter = stoi(argv[1]);
+	int numToPrint = 10;
 
 	list<int> recipes;
 	recipes.push_back(3);
@@ -20,8 +18,9 @@ int main(int argc, char** argv) {
 	auto elf2 = recipes.begin();
 	elf2++;
 	deque<int> newNums;
+	cout << "Max list size: " << recipes.max_size() << endl;
 
-	while (n > 0) {
+	while (recipes.size() <= (numRecipesAfter + numToPrint)) {
 		int i = *elf1 + 1;
 		int j = *elf2 + 1;
 
@@ -38,35 +37,40 @@ int main(int argc, char** argv) {
 		}
 
 		// march elf1
-		while (i > 0) {
+		while (i-- > 0) {
 			elf1++;
 			if (elf1 == recipes.end()) {
 				elf1 = recipes.begin();
-			}
-			i--;		
+			}		
 		}
 
 		// march elf2
-		while (j > 0) {
+		while (j-- > 0) {
 			elf2++;
 			if (elf2 == recipes.end()) {
 				elf2 = recipes.begin();
-			}
-			j--;		
+			}		
 		}
 
-		n--;
+		if (elf1 == elf2) {			
+			cout << "same" << endl;
+			if (elf2 == recipes.end()) {
+				elf2 = recipes.begin();
+			}
+			elf2++;
+		}
+		//cout << "\r" << recipes.size();
 	}
-
+	cout << endl;
 	int numRcpsAfter = numRecipesAfter;
 	auto it = recipes.begin();
-	while(numRcpsAfter && (it != recipes.end())) {
+	while(numRcpsAfter) {
 		numRcpsAfter--;
 		it++;
 	}
 
-	int numToPrint = 10;
-	while(numToPrint && (it != recipes.end())) {
+
+	while(numToPrint) {
 		cout << *it;
 		it++;
 		numToPrint--;
