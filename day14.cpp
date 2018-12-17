@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <deque>
 #include <iterator>
+#include <vector>
 
 using namespace std;
 
@@ -11,21 +12,19 @@ int main(int argc, char** argv) {
 	int numRecipesAfter = stoi(argv[1]);
 	int numToPrint = 10;
 
-	list<int> recipes;
+	vector<int> recipes;
 	recipes.push_back(3);
 	recipes.push_back(7);
-	auto elf1 = recipes.begin();
-	auto elf2 = recipes.begin();
-	elf2++;
+	unsigned int elf1 = 0;
+	unsigned int elf2 = 1;
 	deque<int> newNums;
-	cout << "Max list size: " << recipes.max_size() << endl;
 
 	while (recipes.size() <= (numRecipesAfter + numToPrint)) {
-		int i = *elf1 + 1;
-		int j = *elf2 + 1;
+		int i = recipes[elf1] + 1;
+		int j = recipes[elf2] + 1;
 
 		// get new recipes.
-		int newNum = *elf1 + *elf2;
+		int newNum = recipes[elf1] + recipes[elf2];
 		while(newNum) {
 			newNums.push_back(newNum % 10);
 			newNum /= 10;
@@ -39,36 +38,31 @@ int main(int argc, char** argv) {
 		// march elf1
 		while (i-- > 0) {
 			elf1++;
-			if (elf1 == recipes.end()) {
-				elf1 = recipes.begin();
+			if (elf1 == recipes.size()) {
+				elf1 = 0;
 			}		
 		}
 
 		// march elf2
 		while (j-- > 0) {
 			elf2++;
-			if (elf2 == recipes.end()) {
-				elf2 = recipes.begin();
+			if (elf2 == recipes.size()) {
+				elf2 = 0;
 			}		
 		}
 
-		if (elf1 == elf2) {			
-			cout << "same" << endl;
-			if (elf2 == recipes.end()) {
-				elf2 = recipes.begin();
-			}
-			elf2++;
+		if (elf1 == elf2) {
+			cout << "same" <<endl;
 		}
-		//cout << "\r" << recipes.size();
 	}
 	cout << endl;
-	int numRcpsAfter = numRecipesAfter;
+
 	auto it = recipes.begin();
-	while(numRcpsAfter) {
-		numRcpsAfter--;
+	while(numRecipesAfter) {
+		//cout << *it;
+		numRecipesAfter--;
 		it++;
 	}
-
 
 	while(numToPrint) {
 		cout << *it;
