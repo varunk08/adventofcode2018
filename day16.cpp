@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 
 using namespace std;
 using Reg = int;
@@ -77,20 +78,59 @@ void FillFuncTable(vector<FuncPtr>& funcTable) {
     funcTable.push_back(&gtrr);
     funcTable.push_back(&eqir);
     funcTable.push_back(&eqri);
-    funcTable.push_back(&eqrr);
+    funcTable.push_back(&eqrr); // opcode: 10
 }
 
-bool SampleSatisfiesThreeInst(vector<Reg> before, Inst curInst, vector<Reg>& after, vector<FuncPtr>& funcTable) {
+bool SampleSatisfiesThreeInst(vector<Reg> before, Inst curInst, vector<Reg>& after, vector<FuncPtr>& funcTable, unordered_map<int, vector<int>>& opCodeFuncDist) {
     int instCount = 0;
     vector<Reg> test(4,0);
+    vector<int> satisfyInst;
     for (int i = 0; i < funcTable.size(); i++) {
+        //if (curInst.op == 7 || curInst.op == 5 || curInst.op == 3 ||curInst.op == 0 ||curInst.op == 2 || curInst.op == 9 || curInst.op == 10 || curInst.op == 12 ) continue;
         test = funcTable[i](before, curInst);
         //cout << test[0] << " " << test[1] << " " << test[2] << " " << test[3] << endl;
         if (test == after) {
+            satisfyInst.push_back(i);
             instCount++;
         }
     }
+
+    auto it = opCodeFuncDist.find(curInst.op);
+    if (it != opCodeFuncDist.end()) {
+        if (satisfyInst.size() < 3) {
+            for (auto i : satisfyInst) {
+                it->second.push_back(i);
+            }
+        } else if (instCount == 0) {
+            cout << "none satisfy: " << curInst.op << endl;
+        }
+    } else {
+        cout << "something wrong" << endl;
+    }
+
+   /* if (instCount == 1) {
+        cout << satisfyInst[0] << " " << curInst.op << " " << curInst.A << " " << curInst.B << " " << curInst.C << endl;
+    }
+    else {
+        cout << endl;
+        cout << "sample: " << curInst.op << " " << curInst.A << " " << curInst.B << " " << curInst.C << endl
+             << "before: " << before[0] << " " << before[1] << " " << before[2] << " " << before[3] << endl
+             << "after: " << after[0] << " " << after[1] << " " << after[2] << " " << after[3] << endl;
+        for (auto i : satisfyInst) {
+            cout << i << ", ";
+        }
+        cout << endl;
+    }*/
+
     return (instCount >= 3);
+}
+
+void Execute(vector<FuncPtr>& funcTable, vector<int>& opCodeToFuncMapping, vector<Reg>& registers, Inst curInst) {
+    registers = funcTable[opCodeToFuncMapping[curInst.op]](registers, curInst);
+    cout << "out: " << registers[0] << " "
+                    << registers[1] << " "
+                    << registers[2] << " "
+                    << registers[3] << endl;
 }
 
 int main(int argc, char** argv) {
@@ -98,7 +138,11 @@ int main(int argc, char** argv) {
     FillFuncTable(funcTable);
     cout <<"Num instructions: " << funcTable.size() << endl;
     int numInstExceedThreeSamples = 0;
-    
+    unordered_map<int, vector<int>> opCodeFuncDist;
+    for (int i = 0; i < 16; i++) {
+        opCodeFuncDist.emplace(i, vector<int>());
+    }
+
     ifstream inFile("day16Input.txt");
     if (inFile.is_open()) {
         string line;
@@ -160,14 +204,81 @@ int main(int argc, char** argv) {
                 }
                 case 3:
                     // Process the instructions and keep a count on them
-                    numInstExceedThreeSamples += (SampleSatisfiesThreeInst(before, curInst, after, funcTable) == true) ? 1 : 0;
+                    numInstExceedThreeSamples += (SampleSatisfiesThreeInst(before, curInst, after, funcTable, opCodeFuncDist) == true) ? 1 : 0;
                     break;
             }
 
             lineNum++;
         }
     }
-
     cout << "Num samples exceeding three inst: " << numInstExceedThreeSamples << endl;
+    
+    for (auto it = opCodeFuncDist.begin(); it != opCodeFuncDist.end(); it++) {
+        cout << endl;
+        cout << it->first << ": " << it->second.size() << endl;
+        /*for (auto i : it->second) {
+            cout << i << ", ";
+        }*/
+        // find majority - greedy
+        int candidate = -1;
+        int candCount = 0;
+        auto iter = it->second.begin();
+        while (iter != it->second.end()) {
+            int i = *iter;
+            iter++;
+            if (candCount == 0) {
+                candidate = i;
+                candCount = 1;
+            } else if (candidate == i) {
+                candCount++;
+            } else {
+                candCount--;
+            }
+        }
+        cout << "max: " << candidate << endl;
+    }
+
+    vector<int> opCodeToFuncMapping = {
+        13,
+        6,
+        0,
+        11,
+        3,
+        10,
+        2,
+        4,
+        7,
+        14,
+        15,
+        5,
+        8,
+        12,
+        1,
+        9,
+    };
+
+    ifstream codeFile("day16Code.txt");
+    if (codeFile.is_open()) {
+        string line;
+        Inst curInst = {};
+        vector<Reg> registers(4, 0);
+        while(getline(codeFile, line)) {
+            cout << line << endl;
+            int begin = 0;
+            int end = line.find(' ');
+            curInst.op = stoi(line.substr(begin, end - begin));
+            begin = end + 1;
+            end = line.find(' ', begin);
+            curInst.A = stoi(line.substr(begin, end - begin));
+            begin = end + 1;
+            end = line.find(' ', begin);
+            curInst.B = stoi(line.substr(begin, end - begin));
+            begin = end + 1;
+            end = line.find(' ', begin);
+            curInst.C = stoi(line.substr(begin, end - begin));
+            Execute(funcTable, opCodeToFuncMapping, registers, curInst);
+        }
+    }
+
     return 0;
 }
