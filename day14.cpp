@@ -4,71 +4,90 @@
 #include <deque>
 #include <iterator>
 #include <vector>
+#include <string>
 
 using namespace std;
 
 int main(int argc, char** argv) {
 
-	int numRecipesAfter = stoi(argv[1]);
+	//int numRecipesAfter = stoi(argv[1]);
 	int numToPrint = 10;
+	vector<int> testSeq = {6,3,3,6,0};
+	//vector<int> testSeq = {9,2,5,1,0};
 
 	vector<int> recipes;
+	//recipes.reserve(numRecipesAfter + numToPrint);
 	recipes.push_back(3);
 	recipes.push_back(7);
 	unsigned int elf1 = 0;
 	unsigned int elf2 = 1;
 	deque<int> newNums;
+	deque<int> lastFive;
+	lastFive.push_back(recipes[0]);
+	lastFive.push_back(recipes[1]);
+	bool seqMatched = false;
 
-	while (recipes.size() <= (numRecipesAfter + numToPrint)) {
-		int i = recipes[elf1] + 1;
-		int j = recipes[elf2] + 1;
-
+	while (seqMatched == false) {
 		// get new recipes.
-		int newNum = recipes[elf1] + recipes[elf2];
-		while(newNum) {
-			newNums.push_back(newNum % 10);
-			newNum /= 10;
-		}
+		unsigned int newNum = recipes[elf1] + recipes[elf2];
+		//cout << newNum;
+		if (newNum == 0) {
+			recipes.push_back(0);
+			lastFive.push_back(0);
+		} else {
+			while(newNum) {
+				newNums.push_back(newNum % 10);
+				newNum /= 10;
+			}
 
-		while(newNums.empty() == false) {
-			recipes.push_back(newNums.back());
-			newNums.pop_back();
+			while(newNums.empty() == false) {
+				recipes.push_back(newNums.back());
+				lastFive.push_back(newNums.back());
+				newNums.pop_back();
+			}
 		}
 
 		// march elf1
-		while (i-- > 0) {
-			elf1++;
-			if (elf1 == recipes.size()) {
-				elf1 = 0;
-			}		
-		}
+		elf1 += (1 + recipes[elf1]);
+		elf1 %= recipes.size();
 
 		// march elf2
-		while (j-- > 0) {
-			elf2++;
-			if (elf2 == recipes.size()) {
-				elf2 = 0;
-			}		
+		elf2 += (1 + recipes[elf2]);
+		elf2 %= recipes.size();
+
+		while (lastFive.size() > testSeq.size()) {
+			lastFive.pop_front();
 		}
 
-		if (elf1 == elf2) {
-			cout << "same" <<endl;
+		//for (auto it = lastFive.begin(); it != lastFive.end(); it++) { cout << *it << endl;}
+		seqMatched = true;
+		for (int i = 0; i < lastFive.size(); i++) {
+			if (lastFive[i] != testSeq[i]) {
+				seqMatched = false;
+				break;
+			}
+		}
+	}
+	cout << "Num recipes: " << recipes.size() - lastFive.size() << endl;
+	
+	/*vector<int> testSeq = {6,3,3,6,0,1};
+	
+	bool found = false;
+	for (int i = numRecipesAfter; (i < numRecipesAfter + numToPrint); i++) {
+		for (int j = 0; j < size(testSeq); j++) {
+			if (recipes[i + j] == testSeq[j]) {
+				found = true;
+			} else {
+				found = false;
+				break;
+			}
+		}
+		if (found == true) {
+			cout << "Starts at: " << i << endl;
+			break;
 		}
 	}
 	cout << endl;
-
-	auto it = recipes.begin();
-	while(numRecipesAfter) {
-		//cout << *it;
-		numRecipesAfter--;
-		it++;
-	}
-
-	while(numToPrint) {
-		cout << *it;
-		it++;
-		numToPrint--;
-	}
-
+*/
 	return 0;
 }
