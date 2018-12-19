@@ -152,11 +152,15 @@ int main(int argc, char** argv) {
     while(instPtr >= 0 && instPtr < input.size()) {
         registers[ip] = instPtr;
    
-        cout << registers[0] << endl;
+        cout << instPtr << ": ";
         int newInstPtr = Execute(instMap,
                                  input,
                                  instPtr,
                                  registers);
+        for (auto i : registers) {
+            cout << i << " ";
+        }
+        cout << endl;
         instPtr = newInstPtr;
         instPtr++;
     }
