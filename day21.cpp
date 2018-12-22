@@ -1,9 +1,11 @@
+#include <unordered_set>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <fstream>
 #include <unordered_map>
 #include <string>
+#include <bitset>
 
 using namespace std;
 using uint = unsigned int;
@@ -38,23 +40,23 @@ vector<Instruction> input = {
 {"addi", 5      ,  1       , 5}, // 15
 {"seti", 19     ,  6       , 5}, // 16
 /*
-{"seti", 0      ,  6       , 4},
-{"addi", 4      ,  1       , 3},
-{"muli", 3      ,  256     , 3},
-{"gtrr", 3      ,  2       , 3},
-{"addr", 3      ,  5       , 5},
-{"addi", 5      ,  1       , 5},
-{"seti", 25     ,  9       , 5},
-{"addi", 4      ,  1       , 4},
-{"seti", 17     ,  3       , 5},
-{"setr", 4      ,  4       , 2},
+{"seti", 0      ,  6       , 4}, //17
+{"addi", 4      ,  1       , 3}, //18
+{"muli", 3      ,  256     , 3}, //19
+{"gtrr", 3      ,  2       , 3}, //20
+{"addr", 3      ,  5       , 5}, //21
+{"addi", 5      ,  1       , 5}, //22
+{"seti", 25     ,  9       , 5}, //23
+{"addi", 4      ,  1       , 4}, //24
+{"seti", 17     ,  3       , 5}, //25
+{"setr", 4      ,  4       , 2}, //26
 */
-{"divi", 2      ,  256     , 2},
-{"setr", 2      ,  0       , 4},
-{"seti", 7      ,  2       , 5},
-{"eqrr", 1      ,  0       , 4},
-{"addr", 4      ,  5       , 5},
-{"seti", 5      ,  8       , 5},
+{"divi", 2      ,  256     , 2}, //27
+{"setr", 2      ,  0       , 4}, //28
+{"seti", 7      ,  2       , 5}, //29
+{"eqrr", 1      ,  0       , 4}, //30
+{"addr", 4      ,  5       , 5}, //31
+{"seti", 5      ,  8       , 5}, //32
 };
 
 // finds divisor
@@ -143,6 +145,7 @@ long long int Execute(unordered_map<string, FuncPtr>& instMap,
     return registers[ip];
 }
 
+
 int main(int argc, char** argv) {
     vector<FuncPtr> funcTable;
     unordered_map<string, FuncPtr> instMap;
@@ -150,6 +153,7 @@ int main(int argc, char** argv) {
     vector<Reg> registers(6, 0);
     registers[0] = 10114162;
     long long int  instPtr = 0;
+    unordered_set<int> bVals;
 
     while(instPtr >= 0 && instPtr < input.size()) {
         registers[ip] = instPtr;
@@ -163,11 +167,14 @@ int main(int argc, char** argv) {
         instPtr = newInstPtr;
         instPtr++;        
         if (instPtr == 22) {
-            /*cout << instPtr << ": ";
-            for (auto i : registers) {
-                cout << i << " ";
-            }*/
             cout << registers[1] << endl;
+            auto it = bVals.find(registers[1]);
+            if (it == bVals.end()) {
+                bVals.emplace(registers[1]);
+            } else {
+                cout << "repeat: " << registers[1] << endl;
+                break;
+            }
         }
     }
  
