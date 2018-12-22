@@ -71,7 +71,8 @@ bool MoveUnit(vector<Unit>& units, uint curUnit, uint& target) {
     // Identify all possible targets
     // adjacent squares of the target are in range
     //  - end turn if no square adjacent and not in range
-
+    cout << "src: " << units[curUnit].xpos << ", " << units[curUnit].ypos
+         << " target: " << target[curUnit] << endl;
     return inRange;
 }
 
@@ -90,6 +91,7 @@ int main(int argc, char** argv) {
     bool targetsRem = true;
     while (targetsRem) {
         targetsRem = false;
+        // sort the units for correct move order
         sort (units.begin(), units.end(), [](const Unit& A, Unit& B) {
             if (A.ypos == B.ypos) {
                 return A.xpos < B.xpos;
@@ -98,13 +100,14 @@ int main(int argc, char** argv) {
             }
         });
 
+        // for each unit if it is an enemy unit, perform move or attack
+        // i = src
+        // j = target
         for (uint i = 0; i < units.size(); i++) {
             for (uint j = 0; j < units.size(); j++) {
                 if ((i != j) && (units[i].type != units[j].type)) {
                     targetsRem = true;
-                    // move
-                    uint target = 0;
-                    if (MoveUnit(units, i, target)) {
+                    if (MoveUnit(units, i, j)) {
                         Attack(units, i, target);
                     }
                     // attack
