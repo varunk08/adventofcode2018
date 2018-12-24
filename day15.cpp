@@ -12,8 +12,10 @@
 
 using namespace std;
 using uint = unsigned int;
-const uint AttackPwr = 3;
-const uint UnitHp    = 200;
+
+const uint UnitHp       = 200;
+const uint GobAttackPwr = 3;
+const uint ElfAttackPwr = 40;
 
 enum Object {
     Empty,
@@ -135,10 +137,10 @@ MoveStatus MoveUnit(vector<vector<Object>>& grid, vector<Unit>& units, uint curU
         if (i != curUnit && units[i].type != cur.type) {
             move.foundSomebody = true;
             // adjacent squares of the target are in range
-            for (const Coord& adjPt : {
-                Coord {units[i].xpos - 1, units[i].ypos},
-                Coord {units[i].xpos + 1, units[i].ypos},
+            for (const Coord& adjPt : {                
                 Coord {units[i].xpos, units[i].ypos - 1},
+                Coord {units[i].xpos + 1, units[i].ypos},
+                Coord {units[i].xpos - 1, units[i].ypos},                             
                 Coord {units[i].xpos, units[i].ypos + 1}
             }) {
                     if (adjPt.x >= 0 && adjPt.x < grid.size() && adjPt.y >= 0 && adjPt.y < grid[adjPt.x].size()) {
@@ -164,93 +166,98 @@ MoveStatus MoveUnit(vector<vector<Object>>& grid, vector<Unit>& units, uint curU
         return move;
     }
 
-    for (auto targetPt : allAdjPts) {
-        // maps node and visited from
-        unordered_map<Coord, Coord> path;
-        unordered_set<Coord>        visited;
-        queue<Coord> nextNodes; 
-
-        nextNodes.emplace(root);
-        // the root is visited from none
-        path.emplace(root, Coord{-1, -1});
-
-        while(nextNodes.empty() == false) {
-            Coord curLoc = nextNodes.front();
-            nextNodes.pop();
-
-            auto it = visited.find(curLoc);
-            if (it == visited.end()) {
-                visited.emplace(curLoc);
-
-                if (curLoc == targetPt) {
-                    break; // continue here as there could be multiple shortest paths
-                }
-
-                for (Coord next : {
-                    Coord {curLoc.x, curLoc.y - 1},
-                    Coord {curLoc.x - 1, curLoc.y},
-                    Coord {curLoc.x + 1, curLoc.y},                    
-                    Coord {curLoc.x, curLoc.y + 1}
-                }) {
-                    if (next.x >= 0 && next.x < grid.size() && next.y >= 0 && next.y < grid[next.x].size() &&
-                    (grid[next.x][next.y] == Empty)) {  // its a valid coord
-                        path.emplace(next, curLoc);
-                        nextNodes.emplace(Coord {next.x, next.y});
-                    }
-                } 
-            }
-        } // find the shortest path
-        
-        //cout << "[Move] path size: " << targetPt << " :" << path.size() << endl;
-        if (path.size() <= 1) {
-            continue;
-        }
-
-        // back track to get distance to root
-        auto pit = path.find(targetPt);
-        if (pit != path.end()) {
-            Coord from = pit->second;
-            int dist = 1;
-            //cout << "[Move] target: " << targetPt << " from: " << from <<" root: " << root << " dist: " << dist << endl;
-            while (from != root) {
-                pit = path.find(from);
-                if (pit != path.end()) {
-                    from = pit->second;
-                    dist++;
-                } else {
-                    cout << "[Move] path map can't find! " << targetPt << " " << root << " " << from << endl;
-                }
-            }
+    for (auto targetPt : allAdjPts) { 
+        for (Coord adjRoot : {
+            Coord {root.x, root.y - 1},                    
+            Coord {root.x + 1, root.y},  
+            Coord {root.x - 1, root.y},                                      
+            Coord {root.x, root.y + 1} }) {
             
-            if (dist < minDist) {
-                minDist = dist;
-                nextMove = pit->first;
-                prevTargetPt = targetPt;
-            } else if (dist == minDist) {
-                // break tie based on reading order of target point
-                if (prevTargetPt.y == targetPt.y) {
-                    /*if (prevTargetPt.x == targetPt.x) { // same targetPt with different paths of same distance
-                        // choose based on next move in reading order
-                        prevTargetPt = targetPt;
-                        if (pit->first.y < nextMove.y) {
-                            nextMove = pit->first;
-                        }
-                    } else */ if (prevTargetPt.x > targetPt.x) {
-                        prevTargetPt = targetPt;
-                        nextMove = pit->first;
+            if (adjRoot.x >= 0 && adjRoot.x < grid.size() && adjRoot.y >= 0 && adjRoot.y < grid[adjRoot.x].size() &&
+                (grid[adjRoot.x][adjRoot.y] == Empty)) {  // its a valid coord
+
+                unordered_map<Coord, Coord> path;
+                unordered_set<Coord>        visited;
+                queue<Coord>                nextNodes;
+
+
+                nextNodes.emplace(adjRoot);                
+                // the root is visited from the actual root
+                path.emplace(adjRoot, root);
+
+                while(nextNodes.empty() == false) {
+                    Coord curLoc = nextNodes.front();
+                    nextNodes.pop();
+
+                    auto it = visited.find(curLoc);
+                    if (it == visited.end()) {
+                        visited.emplace(curLoc);
+    
+                            if (curLoc == targetPt) {
+                                break; // continue here as there could be multiple shortest paths
+                            }
+    
+                        for (Coord next : {                    
+                            Coord {curLoc.x, curLoc.y - 1},                    
+                            Coord {curLoc.x + 1, curLoc.y},  
+                            Coord {curLoc.x - 1, curLoc.y},                                      
+                            Coord {curLoc.x, curLoc.y + 1}
+                        }) {
+                            if (next.x >= 0 && next.x < grid.size() && next.y >= 0 && next.y < grid[next.x].size() &&
+                            (grid[next.x][next.y] == Empty)) {  // its a valid coord
+                                path.emplace(next, curLoc);
+                                nextNodes.emplace(Coord {next.x, next.y});
+                            }
+                        } 
                     }
-                } else if (prevTargetPt.y > targetPt.y) {
-                    prevTargetPt = targetPt;
-                    nextMove = pit->first;
-                }
-            }
-            //cout << "[Move] currently chosen target: " << prevTargetPt << endl;
-        } else {
-#if ENABLE_DBG_PRINT
-            cout << "[Move] target not found!" << endl;
-#endif            
-        }
-    }
+                } // find the shortest path
+        
+                // back track to get distance to root
+                auto pit = path.find(targetPt);
+                if (pit != path.end()) {
+                    int dist = 0;
+                    //cout << "[Move] target: " << targetPt << " from: " << from <<" root: " << adjRoot << " dist: " << dist << endl;
+                    while (pit->second != root) {
+                        pit = path.find(pit->second);
+                        if (pit != path.end()) {
+                            dist++;
+                        } else {
+                            cout << "[Move] path map can't find! " << targetPt << " " << root << " " << pit->second << endl;
+                        }
+                    } // back track through path map
+                    
+                    if (dist < minDist) {
+                        minDist      = dist;
+                        nextMove     = adjRoot;
+                        prevTargetPt = targetPt;
+                    } else if (dist == minDist) {
+                        // break tie based on reading order of target point
+                        if (prevTargetPt.y == targetPt.y) {
+                            if (prevTargetPt.x == targetPt.x) { // same targetPt with different paths of same distance
+                                if (adjRoot.y < nextMove.y) {
+                                    nextMove = adjRoot;
+
+                                } else if ((adjRoot.y == nextMove.y) && (adjRoot.x < nextMove.x)) {
+                                    nextMove = adjRoot;
+                                }
+
+                            } else if (prevTargetPt.x > targetPt.x) { // different target in the same x coord
+                                prevTargetPt = targetPt;
+                                nextMove = adjRoot;
+                            }
+
+                        } else if (prevTargetPt.y > targetPt.y) {
+                            prevTargetPt = targetPt;
+                            nextMove = adjRoot;
+                        }                        
+                    } // if there was a better path
+
+                } // if there was a valid path
+
+            } // adj point is valid
+
+        } // for each adj point to the root        
+    } // for each target
 
 #if ENABLE_DBG_PRINT
     // Debug print stuff here:
@@ -290,9 +297,10 @@ MoveStatus MoveUnit(vector<vector<Object>>& grid, vector<Unit>& units, uint curU
 struct  AttackOutcome
 {
     bool someoneDied;
-    uint diedIdx;    
+    uint diedIdx;
+    bool elfDied;  
 };
-AttackOutcome Attack(vector<vector<Object>>& grid, vector<Unit>& units, uint curUnit) {
+AttackOutcome Attack(vector<vector<Object>>& grid, vector<Unit>& units, uint curUnit, int elfAttack) {
     AttackOutcome res  = {false,  -1};
     Unit& cur          = units[curUnit];
     Coord root         = {cur.xpos, cur.ypos};
@@ -335,12 +343,16 @@ AttackOutcome Attack(vector<vector<Object>>& grid, vector<Unit>& units, uint cur
 
     // perform the attack
     if (chosenIdx != -1) {
-        units[chosenIdx].hp -= AttackPwr;
+        units[chosenIdx].hp -= (units[chosenIdx].type == Elf) ? GobAttackPwr : elfAttack;
 
         // erase the enemy unit from the map
             if (units[chosenIdx].hp <= 0) {
                 grid[units[chosenIdx].xpos][units[chosenIdx].ypos] = Empty;                
-    
+                
+                if (units[chosenIdx].type == Elf) {
+                    res.elfDied = true;
+                }
+
                 int idx = 0;
                 for (auto it = units.begin(); it != units.end(); it++) {
                    if (idx++ == chosenIdx) {
@@ -365,17 +377,32 @@ AttackOutcome Attack(vector<vector<Object>>& grid, vector<Unit>& units, uint cur
 
 int main(int argc, char** argv) {
     // the game grid
-    vector<vector<Object>> grid;
+    vector<vector<Object>> mainGrid;
     // all units
-    vector<Unit> units;
+    vector<Unit> mainUnits;
     // read the file and fill in the data structures
-    ReadFile(grid, units);
-    cout << "[Main] Num Units: " << units.size() << endl;
+    ReadFile(mainGrid, mainUnits);
+    cout << "[Main] Num Units: " << mainUnits.size() << endl;
 
     uint round = 0;
     bool targetsRem = true;
+    bool reset = false;
+    int elfPwr = ElfAttackPwr;
+
+    vector<vector<Object>> grid(mainGrid);
+    vector<Unit> units(mainUnits);
+
 
     while (targetsRem) {
+
+        if (reset) {
+            round = 0;
+            reset = false;
+            grid  = mainGrid;
+            units = mainUnits;
+            elfPwr++;
+        }
+
         // sort the units for correct move order
         sort (units.begin(), units.end(), [](const Unit& A, Unit& B) {
             if (A.ypos == B.ypos) {
@@ -390,11 +417,16 @@ int main(int argc, char** argv) {
             //cout << "[Main] unit loc: " << units[i].xpos << ", " << units[i].ypos << endl;
             MoveStatus move = MoveUnit(grid, units, i);          
             if (move.alreadyInRange) {
-                AttackOutcome result = Attack(grid, units, i);
+                AttackOutcome result = Attack(grid, units, i, elfPwr);
                 if (result.someoneDied) {
-                    cout << "[Main] died: " << i << endl;
+                    //cout << "[Main] died: " << i << endl;
                     if (result.diedIdx < i) {
                         i--;                    
+                    }
+
+                    if (result.elfDied) {
+                        reset = true;
+                        break;
                     }
 
                     targetsRem = false;
@@ -403,7 +435,6 @@ int main(int argc, char** argv) {
                             targetsRem = true;
                         }
                     }
-
                 }
             } else if (move.foundSomebody == false) {
                 // didn't move, didn't attack, so enemies vanquished
@@ -415,27 +446,30 @@ int main(int argc, char** argv) {
         if (targetsRem) {
             round++;
         }
-        
+#if ENABLE_DBG_PRINT
         cout << "[Main] Round: " << round << endl;
         for (auto unit : units) {
             cout << "[Main] unit hp: " << unit.type << " " <<  unit.hp << endl;
         }        
-
+#endif
         cout << endl;
         for (int y = 0; y < grid.size(); y++) {
             for(int x = 0; x < grid[y].size(); x++) {
                     if (grid[x][y] == Wall) {
-                        cout << (char) 46;
-                    } else if (grid[x][y] != Empty) {
-                        cout << (char)(grid[x][y]);
-                    }   else {
-                        cout << " ";
+                        cout << (char) 179;
+                    } else if (grid[x][y] == Elf) {
+                        cout << (char)(grid[x][y]+1) ;
+                    } else if (grid[x][y] == Goblin) {
+                        cout << 'x' ;
+                    }else {
+                       cout << " ";
                     }                
                 }
             cout << endl;
         }
+        
     }
-
+#if ENABLE_DBG_PRINT
     cout << "[Main] Num rounds: " << round << endl;
     int score = 0;
     for (auto unit : units) {
@@ -444,5 +478,7 @@ int main(int argc, char** argv) {
     }
     cout << "[Main] Total HP: " << score << endl;
     cout << "[Main] Score: " << round * score << endl;
+    cout << "[Main] Elf attack: " << elfPwr << endl;
+#endif    
     return 0;
 }
