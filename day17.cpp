@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <deque>
 
 using namespace std;
 
@@ -10,7 +11,7 @@ struct Range {
     int startX; int endX; int startY; int endY;
 
     friend ostream& operator<<( ostream& os, const Range& r)  {
-        os << "(" << r.startX << ", " << r.endX << ") (" << r.startY << ", " << r.endY << ")";
+        os << "x:(" << r.startX << ", " << r.endX << ") y:(" << r.startY << ", " << r.endY << ")";
         return os;
     }
 };
@@ -20,6 +21,74 @@ enum Object {
     water
 };
 
+struct Coord {
+    int x;
+    int y;
+};
+using Spring = Coord;
+
+void TraceSpring(vector<vector<Object>>& grid, Spring curSpring);
+
+bool TraceLateral(vector<vector<Object>>& grid, Coord cur, int dir) {
+    if (grid[cur.x][cur.y] == clay) {
+        return true;
+    }
+
+    if (cur.y == 0 || cur.y == grid[0].size() - 1 || cur.x == 0 || cur.x == grid.size()) {
+        return false;
+    }
+
+    if (grid[cur.x][cur.y + 1] == sand) {
+        
+        if (grid[cur.x - dir][cur.y + 1] != water) {
+            TraceSpring(grid, Spring {cur.x, cur.y});
+            grid[cur.x][cur.y] = water;
+
+            if ((cur.x < grid.size() - 1) && grid[cur.x + dir][cur.y + 1] == water) {
+                return TraceLateral(grid, {cur.x + dir, cur.y}, dir);
+            }
+
+            if ((cur.x + dir) >= 0 && (cur.x + dir) < grid.size() && (cur.y + 1) >=0 && (cur.y + 1) < grid[0].size()) {                
+                if (grid[cur.x + dir][cur.y + 1] == clay) {
+                    return TraceLateral(grid, {cur.x + dir, cur.y}, dir);       
+                }
+            }
+        }
+
+        return false;        
+    } else {
+        grid[cur.x][cur.y] = water;
+    }
+
+    return TraceLateral(grid, {cur.x + dir, cur.y}, dir);
+}
+
+void TraceSpring(vector<vector<Object>>& grid, Spring curSpring) {
+    deque<Coord> perSpringStack;
+    Coord nextDown = {curSpring.x, curSpring.y + 1};
+    while ((nextDown.y < grid[0].size()) && (grid[nextDown.x][nextDown.y] != clay)) {
+        perSpringStack.push_back(nextDown);        
+        grid[nextDown.x][nextDown.y] = water;
+        nextDown.y++;
+    }
+
+    while (perSpringStack.empty() == false) {        
+        Coord cur = perSpringStack.back();
+        perSpringStack.pop_back();
+
+        if (cur.y == 0 || cur.y == grid[0].size() - 1 || cur.x == 0 || cur.x == grid.size() - 1) {
+            break;
+        }
+
+        bool hitWallLeft  = TraceLateral(grid, {cur.x -1, cur.y}, -1);
+        bool hitWallRight = TraceLateral(grid, {cur.x +1, cur.y}, +1);
+
+        // one of them didn't hit a wall, so don't process further.
+        if (hitWallRight == false || hitWallLeft == false) {
+            break;
+        }
+    }
+}
 
 int main(int argc, char** argv) {
     ifstream inFile("day17Input.txt");
@@ -51,53 +120,59 @@ int main(int argc, char** argv) {
         if (range.startY < minY) { minY = range.startY; }
         if (range.endY > maxY)   { maxY = range.endY;   }
     }
-    cout << "[Main] x: " << minX << " " <<maxX << endl;
-    cout << "[Main] y: " << minY << " " <<maxY << endl;
 
+    int width = maxX - minX + 1;
+    int height = maxY - minY + 1;
     // +2 for extra space on either extremities
-    vector<vector<Object>> grid(maxX - minX + 3, vector<Object>(maxY - minY + 3, sand));
+    vector<vector<Object>> grid(width + 2, vector<Object>(height + 1, sand));
+    cout << "[Main] x: " << grid.size() << endl;
+    cout << "[Main] y: " << grid[0].size() << endl;
 
+/*
     for (int y = 0; y < grid[0].size(); y++) {
         for (int x = 0; x < grid.size(); x++) {
             cout << grid[x][y];
         }
         cout << endl;
     }
-
-return 0;+++++++++++++++++++++++++++++++++++++++
-    // fill the grid with the ranges
-    for (auto range : ranges) {
-        cout << range << endl;
-
-        for (int y = range.startY - minY + 1; y <= range.endY - minY + 1; y++) {
-            for (int x = range.startX - minX + 1; x <= range.endX - minX + 1; x++) {
-                cout << x << " " << y << endl;
+*/
+    for (auto r : ranges) {
+        for (int y = r.startY - minY + 1; y <= r.endY - minY + 1; y++) {
+            for(int x = r.startX - minX + 1; x <= r.endX - minX + 1; x++) {
+                //cout << r << endl;
+                //cout << x << ", " << y << endl;
                 grid[x][y] = clay;
             }
         }
     }
-    return 0;
-    // fill with stagnant water
-    for (int y = 0; y < grid.size(); y++) {
-        bool fill = false;
-        for (int x = 0; x < grid[x].size(); x++) {
-            if (grid[x][y] == clay) {
-                fill = !fill;
-                continue;
+
+    cout << "[Main] starting tracing "<< endl;
+    TraceSpring(grid, Spring {500 - minX + 1, 0});    
+
+    // print grid
+    for (int y = 0; y < grid[0].size(); y++) {
+        for (int x = 0; x < grid.size(); x++) {
+            if (grid[x][y] == sand) {
+                cout << '.';
+            } else if (grid[x][y] == water) {
+                cout << '|';
+            } else {
+                cout << '#';
             }
-            if (fill) {
-                grid[x][y] = water;
+        }
+        cout << endl;
+    } 
+
+    int numWater = 0;
+    for (int y = 0; y < grid[0].size(); y++) {
+        for (int x = 0; x < grid.size(); x++) {
+            if (grid[x][y] == water) {
+                numWater++;
             }
         }
     }
 
-    for (int y = 0; y < grid.size(); y++) {
-        for (int x = 0; x < grid[x].size(); x++) {
-            cout << grid[x][y];
-        }
-        cout <<endl;
-    }
-
+    cout << "numWater: " << numWater << endl;
 
     return 0;
 }
