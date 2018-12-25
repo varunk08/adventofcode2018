@@ -18,7 +18,8 @@ struct Range {
 enum Object {
     sand,
     clay,
-    water
+    water,
+    stagnantWater
 };
 
 struct Coord {
@@ -148,21 +149,7 @@ int main(int argc, char** argv) {
 
     cout << "[Main] starting tracing "<< endl;
     TraceSpring(grid, Spring {500 - minX + 1, 0});    
-
-    // print grid
-    for (int y = 0; y < grid[0].size(); y++) {
-        for (int x = 0; x < grid.size(); x++) {
-            if (grid[x][y] == sand) {
-                cout << '.';
-            } else if (grid[x][y] == water) {
-                cout << '|';
-            } else {
-                cout << '#';
-            }
-        }
-        cout << endl;
-    } 
-
+    
     int numWater = 0;
     for (int y = 0; y < grid[0].size(); y++) {
         for (int x = 0; x < grid.size(); x++) {
@@ -174,5 +161,84 @@ int main(int argc, char** argv) {
 
     cout << "numWater: " << numWater << endl;
 
+    for (int y = 0; y < grid[0].size(); y++) {
+        bool record = false;
+        for (int x = 0; x < grid.size(); x++) {
+            if (grid[x][y] == water) {
+                bool stagnant = true;
+                for (Coord loc : {Coord {x + 1, y}, Coord {x - 1, y }, Coord { x, y - 1}, Coord {x, y + 1},
+                                  Coord {x - 1, y -1}, Coord {x - 1, y + 1 }, Coord { x + 1, y - 1}, Coord {x + 1, y + 1} }) {
+                    if (loc.x >= 0 && loc.x <= grid.size() - 1 && loc.y >= 0 && loc.y <= grid[0].size() - 1 && grid[loc.x][loc.y] == sand) {
+                        stagnant = false;
+                        break;
+                    }
+                }
+
+                if (stagnant) {
+                    grid[x][y] = stagnantWater;
+                }
+            }
+        }
+    }
+
+    for (int y = 0; y < grid[0].size(); y++) {
+        bool record = false;
+        for (int x = 0; x < grid.size(); x++) {
+            if (record == false && grid[x][y] == stagnantWater) {
+                record = true;
+            }
+            if (record && grid[x][y] == clay) {
+                record = false;
+            }
+
+            if (record && grid[x][y] == water) {
+                grid[x][y] = stagnantWater;
+            }
+        }
+    }
+
+    for (int y = 0; y < grid[0].size(); y++) {
+        bool record = false;
+        for (int x = grid.size() - 1; x >= 0; x--) {
+
+            if (record == false && grid[x][y] == stagnantWater) {
+                record = true;
+            }
+            if (record && grid[x][y] == clay) {
+                record = false;
+            }
+
+            if (record && grid[x][y] == water) {
+                grid[x][y] = stagnantWater;
+            }
+
+        }
+    }
+
+    // print grid
+    for (int iy = 0; iy < grid[0].size(); iy++) {
+        for (int ix = 0; ix < grid.size(); ix++) {
+            if (grid[ix][iy] == sand) {
+                cout << '.';
+            } else if (grid[ix][iy] == water) {
+                cout << '|';
+            } else if (grid[ix][iy] == stagnantWater) {
+                cout << '~';
+            } else {
+                cout << '#';
+            }
+        }
+        cout << endl;
+    } 
+
+    int numStagWater = 0;
+    for (int y = 0; y < grid[0].size(); y++) {
+        for (int x = 0; x < grid.size(); x++) {
+            if (grid[x][y] == stagnantWater) {
+                numStagWater++;
+            }
+        }
+    }
+    cout << "num stagnantWater: " << numStagWater << endl;
     return 0;
 }
