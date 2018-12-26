@@ -67,18 +67,32 @@ void CalcLongestPath(vector<Node*> nodes, int& pathLength) {
     }
 }
 
+void CalcPathLengthAtLeast1k(vector<Node*> nodes,int& numGtr1k, int curPathSize, int atLeast = 1000) {
+    for (auto pNode : nodes) {
+        for (auto vec : pNode->children) {         
+            if (vec.size() > 0) {
+                if (curPathSize >= atLeast) {
+                    numGtr1k += vec.size();
+                } else if ((vec.size() + curPathSize) > atLeast)  {
+                    numGtr1k += ((vec.size() + curPathSize) - atLeast);
+                }
+                CalcPathLengthAtLeast1k(vec, numGtr1k, curPathSize + vec.size(), atLeast);
+            }
+        }
+    }   
+}
+
 int main(int argc, char** argv) {
     ifstream inFile("day20Input.txt");
     vector<string> badCombos;
     GenerateCombinations(badCombos, "NEWS");
     GenerateCombinations(badCombos, "EEWW");
     GenerateCombinations(badCombos, "NNSS");
-    GenerateCombinations(badCombos, "NS");
-    GenerateCombinations(badCombos, "EW");
-    for (auto str : badCombos) {
-        cout << str << endl;
-    }
-    cout << badCombos.size() << endl;
+    vector<string> twoCombos;
+    GenerateCombinations(twoCombos, "NS");
+    GenerateCombinations(twoCombos, "EW");
+    cout << "[Main] num bad combos: " << badCombos.size() << endl;
+    cout << "[Main] num bad combos: " << twoCombos.size() << endl;
     string line;
     if (inFile.is_open()) {        
         getline(inFile, line);
@@ -88,7 +102,23 @@ int main(int argc, char** argv) {
             for (auto str : badCombos) {
                 int badPos = line.find(str);
                 if (badPos != string::npos) {
-                    line.erase(badPos, size(str));
+                    line.erase(badPos + 2, size(str) - 2);
+                } else {
+                    numCombos--;
+                }
+            }
+
+            if (numCombos == 0) {
+                break;
+            }
+        }
+
+         while (true) {
+            int numCombos = twoCombos.size();
+            for (auto str : twoCombos) {
+                int badPos = line.find(str);
+                if (badPos != string::npos) {
+                    line.erase(badPos + 1, size(str) - 1);
                 } else {
                     numCombos--;
                 }
@@ -99,8 +129,6 @@ int main(int argc, char** argv) {
             }
         }
     }
-
-    cout << line << endl;
 
     line.erase(0, 1);
     line.erase(line.size() - 1, 1);
@@ -141,6 +169,12 @@ int main(int argc, char** argv) {
     int pathLength = 0;    
     CalcLongestPath(nodes, pathLength);
     cout << "biggestChild: " << pathLength << endl; 
+
+    int numGtr1k = 0;
+
+    CalcPathLengthAtLeast1k(nodes, numGtr1k, 0, 1000);
+    cout << "numGtr1k: " << numGtr1k << endl;
+    
 
     return 0;
 }
