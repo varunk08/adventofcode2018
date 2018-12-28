@@ -1,3 +1,6 @@
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <cmath>
 #include <algorithm>
 #include <iostream>
@@ -9,7 +12,12 @@
 using namespace std;
 
 struct Node {
-    Node(char _dir) : dir(_dir) {
+    Node(char _dir, int _doorDist, int _x, int _y)
+    :
+    dir(_dir),
+    doorDist(_doorDist),
+    x(_x),
+    y(_y)  {
         children.resize(3);
         for (int i = 0; i < children.size(); i++) {
             children[i].resize(0);
@@ -17,8 +25,16 @@ struct Node {
     }
 
     char dir;
+    int doorDist;
+    int x; int y;
     int curChildIdx = 0;
     vector<vector<Node*>> children;
+};
+
+struct pair_hash {
+    inline std::size_t operator()(const std::pair<int,int> & v) const {
+        return v.first*31+v.second;
+    }
 };
 
 char specialChars[] = { '(', ')', '|', '^' };
@@ -67,16 +83,18 @@ void CalcLongestPath(vector<Node*> nodes, int& pathLength) {
     }
 }
 
-void CalcPathLengthAtLeast1k(vector<Node*> nodes,int& numGtr1k, int curPathSize, int atLeast = 1000) {
+void CalcPathLengthAtLeast1k(vector<Node*> nodes,int& numGtr1k, int atLeast) {
     for (auto pNode : nodes) {
         for (auto vec : pNode->children) {         
             if (vec.size() > 0) {
-                if (curPathSize >= atLeast) {
-                    numGtr1k += vec.size();
-                } else if ((vec.size() + curPathSize) > atLeast)  {
-                    numGtr1k += ((vec.size() + curPathSize) - atLeast);
+                for (auto pNode : vec) {
+                    //cout << pNode->doorDist << " ";
+                    if (pNode->doorDist >= atLeast) {
+                        numGtr1k++;
+                    }
                 }
-                CalcPathLengthAtLeast1k(vec, numGtr1k, curPathSize + vec.size(), atLeast);
+
+                CalcPathLengthAtLeast1k(vec, numGtr1k, atLeast);
             }
         }
     }   
@@ -90,61 +108,125 @@ int main(int argc, char** argv) {
     GenerateCombinations(badCombos, "NNSS");
     vector<string> twoCombos;
     GenerateCombinations(twoCombos, "NS");
-    GenerateCombinations(twoCombos, "EW");
-    cout << "[Main] num bad combos: " << badCombos.size() << endl;
-    cout << "[Main] num bad combos: " << twoCombos.size() << endl;
+    GenerateCombinations(twoCombos, "EW");   
+
     string line;
-    if (inFile.is_open()) {        
-        getline(inFile, line);
 
-        while (true) {
-            int numCombos = badCombos.size();
-            for (auto str : badCombos) {
-                int badPos = line.find(str);
-                if (badPos != string::npos) {
-                    line.erase(badPos + 2, size(str) - 2);
-                } else {
-                    numCombos--;
-                }
-            }
+    unordered_map<string, int> numValidPts;
+    for(auto str : badCombos) {
+        unordered_set<pair<int,int>, pair_hash> pts;
+        
+        int stX = 0; int stY = 0;
+        pts.emplace(make_pair(stX, stY));
 
-            if (numCombos == 0) {
-                break;
+        for (auto ch : str) {
+            switch (ch) {
+                case 'N': stY++; break;
+                case 'S': stY--; break;
+                case 'E': stX++; break;
+                case 'W': stX--; break;
             }
+            pts.emplace(make_pair(stX, stY));
         }
 
-         while (true) {
-            int numCombos = twoCombos.size();
-            for (auto str : twoCombos) {
-                int badPos = line.find(str);
-                if (badPos != string::npos) {
-                    line.erase(badPos + 1, size(str) - 1);
-                } else {
-                    numCombos--;
-                }
-            }
-
-            if (numCombos == 0) {
-                break;
-            }
-        }
+        numValidPts.emplace(str, pts.size() - 1);
+        //cout << str << " " << pts.size() - 1 << endl;
     }
 
-    line.erase(0, 1);
-    line.erase(line.size() - 1, 1);
+    cout << "[Main] num bad combos: " << badCombos.size() << endl;
+    cout << "[Main] num set pts: "    << numValidPts.size() << endl;
+    cout << "[Main] num bad combos: " << twoCombos.size() << endl;
+
+    if (inFile.is_open()) {        
+        getline(inFile, line);
+        // const bool removeThreeCombos = false;
+        // const bool removeTwoCombos = false;
+
+        // while (removeTwoCombos) {
+        //     int numCombos = twoCombos.size();
+        //     for (auto str : twoCombos) {
+        //         int badPos = line.find(str);
+        //         if (badPos != string::npos) {
+        //             line.erase(badPos + 1, size(str) - 1);
+        //         } else {
+        //             numCombos--;
+        //         }
+        //     }
+
+        //     if (numCombos == 0) {
+        //         break;
+        //     }
+        // }
+
+        // while (removeThreeCombos) {
+        //     int numCombos = badCombos.size();
+        //     for (auto str : badCombos) {
+        //         auto it = numValidPts.find(str);
+        //         if (it == numValidPts.end()) {
+        //             cout << "something wrong" << endl;
+        //         }
+
+        //         int badPos = line.find(str);
+        //         if (badPos != string::npos) {
+        //             line.erase(badPos + it->second, size(str) - it->second);
+        //         } else {
+        //             numCombos--;
+        //         }
+        //     }
+
+        //     if (numCombos == 0) {
+        //         break;
+        //     }
+        // }         
+    }
+
+    line.erase(0, 1); // erase '^'
+    line.erase(line.size() - 1, 1); // erase '$'
+    
     stack<Node*> branchRoots;
     vector<Node*> nodes;
-    Node* pNode = new Node('x');
+    unordered_map<pair<int,int>, int, pair_hash> doorsDistMap;
+
+    Node* pNode = new Node('x', 0, 0, 0);
     nodes.push_back(pNode);
     branchRoots.push(nodes.at(0));
- 
+
     for(auto ch : line) {
         //cout << ch;
 
         if (ch != '(' && ch != ')' && ch != '|') { // it is a direction
-            Node* pNode = new Node(ch);
             Node* pRoot = branchRoots.top();
-            pRoot->children[pRoot->curChildIdx].push_back(pNode);
+            int doorDist = pRoot->doorDist;
+            int stX = pRoot->x ; int stY = pRoot->y;
+
+            if (pRoot->children[pRoot->curChildIdx].size() > 0) {
+                auto pPrevCode = pRoot->children[pRoot->curChildIdx].at(pRoot->children[pRoot->curChildIdx].size() - 1);
+                stX = pPrevCode->x;
+                stY = pPrevCode->y;
+                doorDist = pPrevCode->doorDist;
+            }
+
+            int x = stX; int y = stY;
+            switch (ch) {
+                case 'N': y++; break;
+                case 'S': y--; break;
+                case 'E': x++; break;
+                case 'W': x--; break;
+            }
+            
+            auto it = doorsDistMap.find(make_pair(x, y));
+            if (it == doorsDistMap.end()) {
+                doorsDistMap.emplace(make_pair(x, y), ++doorDist);
+                Node* pNode = new Node(ch, doorDist, x, y);
+                pRoot->children[pRoot->curChildIdx].push_back(pNode);                
+            } else {
+                auto prevIt = doorsDistMap.find(make_pair(stX, stY));
+                if (prevIt != doorsDistMap.end()) {
+                    prevIt->second = it->second + 1;
+                } else {
+                    cout << "previous node not found" << endl;
+                }
+            }          
         }
 
         if (ch == '(') { // new branch
@@ -164,7 +246,6 @@ int main(int argc, char** argv) {
     cout << endl;
     cout << "[Main] after insertion " << branchRoots.size() << endl;
 
-
     //PrintMaze(nodes);
     int pathLength = 0;    
     CalcLongestPath(nodes, pathLength);
@@ -172,8 +253,18 @@ int main(int argc, char** argv) {
 
     int numGtr1k = 0;
 
-    CalcPathLengthAtLeast1k(nodes, numGtr1k, 0, 1000);
+    CalcPathLengthAtLeast1k(nodes, numGtr1k, 1000);
+    cout << endl;
     cout << "numGtr1k: " << numGtr1k << endl;
+
+    int numLongPaths = 0;
+    for (auto it = doorsDistMap.begin(); it != doorsDistMap.end(); it++) {
+        if (it->second >= 999) {
+            numLongPaths++;
+        }
+    }
+
+    cout << "numLongPaths: " << numLongPaths<< endl;
     
 
     return 0;
