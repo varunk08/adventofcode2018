@@ -3,6 +3,7 @@
 #include <functional>
 #include <algorithm>
 #include <unordered_set>
+#include <limits>
 
 using namespace std;
 
@@ -48,6 +49,7 @@ struct Group {
     int initiative;
     int immunity;
     int weakness;
+    int attackId;
 };
 
 int main(int argc, char** argv) {
@@ -64,8 +66,8 @@ int main(int argc, char** argv) {
         { 3165,  8703,   26,  radiation,   11, none, slashing | bludgeoning},*/
 
         // test
-        {1, 17, 5390, 4507, fire, 2, none, radiation | bludgeoning},
-        {2, 989, 1274, 25, slashing, fire, bludgeoning | slashing},
+        {1, 17, 5390, 4507, fire, 2, none, radiation | bludgeoning, -1},
+        {2, 989, 1274, 25, slashing, 3, fire, bludgeoning | slashing , -1},
     };
 
     vector<Group> infection = {
@@ -81,12 +83,12 @@ int main(int argc, char** argv) {
         { 713 ,  42679, 102, bludgeoning, 17, none, slashing},*/
 
         // test
-        {1, 801, 4706, 116, bludgeoning, 1, none, radiation},
-        {2, 4485, 2961, 12, slashing, 4, radiation, fire | cold},
+        {1, 801, 4706, 116, bludgeoning, 1, none, radiation    , -1 },
+        {2, 4485, 2961, 12, slashing, 4, radiation, fire | cold, -1 },
     };
 
-    vector<int> immuneSysTargets(immuneSys.size(), 0);
-    vector<int> infectionTargets(infection.size(), 0);
+    //vector<int> immuneSysTargets(immuneSys.size(), 0);
+    //vector<int> infectionTargets(infection.size(), 0);
 
     sort(immuneSys.begin(), immuneSys.end(), [](const Group& A, const Group& B) {
         if ((A.numUnits * A.attack) == (B.numUnits * B.attack)) {
@@ -104,21 +106,21 @@ int main(int argc, char** argv) {
         }
     });
 
-    unordered_set<int> chosenForAttack;
-
-
     // choosing not to use a grid to calc dmg to each unit
-    int maxDmg = 0;
-
+    
     //effective power: the number of units in that group multiplied by their attack damage.
 
     // target selection in decreasing order of effective power
     for (int i = 0; i < immuneSys.size(); i++) {
+        int maxDmg         = numeric_limits<int>::min();
+        int prevInitiative = numeric_limits<int>::min();
+        int prevEffPower   = numeric_limits<int>::min();
         Group& curAttacker = immuneSys[i];
         // calc dmg to each unit
         for (int j = 0; j < infection.size(); j++) {
             Group& curDefender = infection[j];
-            int curDmg = curAttacker.numUnits * curAttacker.attack;
+            int enemyEffPwr = curDefender.numUnits * curDefender.attack;
+            int curDmg      = curAttacker.numUnits * curAttacker.attack;
             if (curDefender.weakness  & curAttacker.atkType) {
                 curDmg *= 2;
             }
@@ -126,10 +128,26 @@ int main(int argc, char** argv) {
             if (curDefender.immunity & curAttacker.atkType) {
                 curDmg = 0;
             }
+            
+            //cout << curDefender.id << endl;
+            //cout << "immune grp " << curAttacker.id << " : " << curDmg << " to infection " << curDefender.id << endl;
 
-            cout << "immune grp " << curAttacker.id << " : " << curDmg << " to infection " << curDefender.id << endl;
+            if (maxDmg == curDmg) {
+                if ((enemyEffPwr > prevEffPower) || (enemyEffPwr == prevEffPower && prevInitiative < curDefender.initiative)) {
+                    prevInitiative       = curDefender.initiative;
+                    maxDmg               = curDmg;
+                    curAttacker.attackId = curDefender.id;
+                    prevEffPower         = enemyEffPwr;
+                }
+            } else if (maxDmg < curDmg) {
+                prevInitiative       = curDefender.initiative;
+                maxDmg               = curDmg;
+                curAttacker.attackId = curDefender.id;
+                prevEffPower         = enemyEffPwr;
+            }                        
         }
 
+        cout << "immune group " << curAttacker.id << " attacks " << curAttacker.attackId << endl;
     }
 
     return 0;
