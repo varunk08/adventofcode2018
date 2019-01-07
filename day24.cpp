@@ -2,6 +2,7 @@
 #include <vector>
 #include <functional>
 #include <algorithm>
+#include <unordered_set>
 
 using namespace std;
 
@@ -39,6 +40,7 @@ enum AtkType {
 };
 
 struct Group {
+    int id;
     int numUnits;
     int unitHp;
     int attack;             // per unit attack
@@ -50,7 +52,7 @@ struct Group {
 
 int main(int argc, char** argv) {
     vector<Group> immuneSys = {
-        { 790 ,  3941,   48,  bludgeoning,  5, none, none},
+        /*{ 790 ,  3941,   48,  bludgeoning,  5, none, none},
         { 624 ,  2987,   46,  bludgeoning, 16, none, none},
         { 5724,  9633,   16,  slashing,     9, bludgeoning | slashing | fire, none},
         { 1033,  10664,  89,  slashing,     1, none, none},
@@ -59,11 +61,15 @@ int main(int argc, char** argv) {
         { 1517,  6424,   35,  bludgeoning, 13, none, none},
         { 1368,  9039,   53,  slashing,     4, bludgeoning, none},
         { 3712,  5377,   14,  slashing,    14, cold | radiation, fire},
-        { 3165,  8703,   26,  radiation,   11, none, slashing | bludgeoning},
+        { 3165,  8703,   26,  radiation,   11, none, slashing | bludgeoning},*/
+
+        // test
+        {1, 17, 5390, 4507, fire, 2, none, radiation | bludgeoning},
+        {2, 989, 1274, 25, slashing, fire, bludgeoning | slashing},
     };
 
     vector<Group> infection = {
-        { 1113,  44169, 57 , fire       , 7,  bludgeoning, radiation},
+        /*{ 1113,  44169, 57 , fire       , 7,  bludgeoning, radiation},
         { 3949,  20615, 9  , bludgeoning, 6,  none, radiation | cold},
         { 602 ,  35167, 93 , radiation  , 20, bludgeoning | cold, fire},
         { 1209,  34572, 55 , bludgeoning, 3,  none, none},
@@ -72,7 +78,11 @@ int main(int argc, char** argv) {
         { 7966,  49894, 9  , cold       , 10, bludgeoning, none},
         { 3471,  18326, 8  , fire       , 18, none, radiation},
         { 110 ,  38473, 640, slashing   , 2 , fire, bludgeoning},
-        { 713 ,  42679, 102, bludgeoning, 17, none, slashing},
+        { 713 ,  42679, 102, bludgeoning, 17, none, slashing},*/
+
+        // test
+        {1, 801, 4706, 116, bludgeoning, 1, none, radiation},
+        {2, 4485, 2961, 12, slashing, 4, radiation, fire | cold},
     };
 
     vector<int> immuneSysTargets(immuneSys.size(), 0);
@@ -86,10 +96,40 @@ int main(int argc, char** argv) {
         }
     });
 
+    sort(infection.begin(), infection.end(), [](const Group& A, const Group& B) {
+        if ((A.numUnits * A.attack) == (B.numUnits * B.attack)) {
+            return A.initiative > B.initiative;
+        } else {
+            return ((A.numUnits * A.attack) > (B.numUnits * B.attack));
+        }
+    });
+
+    unordered_set<int> chosenForAttack;
+
+
+    // choosing not to use a grid to calc dmg to each unit
+    int maxDmg = 0;
+
+    //effective power: the number of units in that group multiplied by their attack damage.
+
     // target selection in decreasing order of effective power
     for (int i = 0; i < immuneSys.size(); i++) {
-        Group& curGroup = immuneSys[i];
-        cout << curGroup.numUnits * curGroup.attack << endl;
+        Group& curAttacker = immuneSys[i];
+        // calc dmg to each unit
+        for (int j = 0; j < infection.size(); j++) {
+            Group& curDefender = infection[j];
+            int curDmg = curAttacker.numUnits * curAttacker.attack;
+            if (curDefender.weakness  & curAttacker.atkType) {
+                curDmg *= 2;
+            }
+
+            if (curDefender.immunity & curAttacker.atkType) {
+                curDmg = 0;
+            }
+
+            cout << "immune grp " << curAttacker.id << " : " << curDmg << " to infection " << curDefender.id << endl;
+        }
+
     }
 
     return 0;
