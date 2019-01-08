@@ -125,7 +125,7 @@ void PerformAttack(Group* pAttacker, Group* pDefender) {
         }
         int before = pDefender->numUnits;
         int remHp = (pDefender->numUnits * pDefender->unitHp) - curDmg;
-        pDefender->numUnits = ceil(remHp / pDefender->unitHp);
+        pDefender->numUnits = ceil(static_cast<float>(remHp) / pDefender->unitHp);
         cout << pAttacker->id << "->" << pDefender->id <<  ": num units rem: " << pDefender->numUnits << "/ " << before << endl;
 }
 
@@ -201,6 +201,15 @@ int main(int argc, char** argv) {
     auto sortByInit = [](const Group& A, const Group& B) { return A.initiative > B.initiative; };
     sort(immuneSys.begin(), immuneSys.end(), sortByInit);
     sort(infection.begin(), infection.end(), sortByInit);
+
+    groupIdMap.clear();
+    for (Group& grp : immuneSys) {
+        groupIdMap.emplace(grp.id, &grp);
+    }
+    for (Group& grp : infection) {
+        groupIdMap.emplace(grp.id, &grp);
+    }
+
     cout << endl;
     int i = 0, j = 0;
     while (i < immuneSys.size() && j < infection.size()) {
@@ -209,17 +218,19 @@ int main(int argc, char** argv) {
 
         Group* pAttacker = nullptr;
         Group* pDefender = nullptr;
-        cout << "current initiatives " <<  initA << " " << initB << endl;
+        // cout << "current initiatives " <<  initA << " " << initB << endl;
         if (initA > initB) {
             pAttacker = &immuneSys[i];
-            pDefender = groupIdMap.find(pAttacker->attackId)->second; cout << "attacker attacks: " << pAttacker->attackId << " def " << pDefender->id << endl;
+            pDefender = groupIdMap.find(pAttacker->attackId)->second;
             i++;
         } else {
             pAttacker = &infection[j];
-            pDefender = groupIdMap.find(pAttacker->attackId)->second; cout << "attacker attacks: " << pAttacker->attackId << " def " << pDefender->id << endl;
+            pDefender = groupIdMap.find(pAttacker->attackId)->second;
             j++;
         }
 
+        // cout << "attacker: " << " id: " << pAttacker->id << " init: " <<pAttacker->initiative << endl
+        //      << "defender " << " id: " << pDefender->id  << " init: " << pDefender->initiative << endl;
         PerformAttack(pAttacker, pDefender);
     }
 
