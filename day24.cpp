@@ -83,26 +83,31 @@ void Target(vector<Group>& attackers, vector<Group>& defenders, unordered_map<in
             if (maxDmg <= curDmg) {
                 if (maxDmg == curDmg) {
                     if ((enemyEffPwr < prevEffPower) ||
-                        (enemyEffPwr == prevEffPower && prevInitiative > curDefender.initiative) ||
-                        (curDefender.defId != -1)) {
+                        (enemyEffPwr == prevEffPower && prevInitiative > curDefender.initiative)) {
                         continue;
                     }
                 }
-                
-                prevInitiative       = curDefender.initiative;
-                maxDmg               = curDmg;
+
+                if (curDefender.defId != -1) {
+                    continue;
+                }
 
                 if (curAttacker.attackId != -1) {
+                    //cout << "changin already attacking " << curAttacker.attackId << " by " << curAttacker.id << endl;
+                    //cout << groupIdMap.find(curAttacker.attackId)->second->defId  << endl;
                     groupIdMap.find(curAttacker.attackId)->second->defId = -1;
                 }
 
+                prevInitiative       = curDefender.initiative;
+                maxDmg               = curDmg;
                 curAttacker.attackId = curDefender.id;
                 prevEffPower         = enemyEffPwr;
                 curDefender.defId    = curAttacker.id;
+                // cout << "cur defender: " << "init: " << curDefender.initiative << " def id: " << curDefender.id << " defends " <<  curDefender.defId << endl;
             } 
         }
 
-        cout << "group " << curAttacker.id << " attacks " << curAttacker.attackId << " for " << curDmg << endl;
+        // cout << "group " << curAttacker.id << " attacks " << curAttacker.attackId << " for " << curDmg << endl;
     }
 }
 
