@@ -131,37 +131,35 @@ void PerformAttack(Group* pAttacker, Group* pDefender) {
 
 int main(int argc, char** argv) {
     vector<Group> immuneSys = {
-        /*{ 790 ,  3941,   48,  bludgeoning,  5, none, none},
-        { 624 ,  2987,   46,  bludgeoning, 16, none, none},
-        { 5724,  9633,   16,  slashing,     9, bludgeoning | slashing | fire, none},
-        { 1033,  10664,  89,  slashing,     1, none, none},
-        { 6691,  9773,   13,  bludgeoning, 12, none, slashing},
-        { 325 ,  11916, 276,  slashing,     8, none, bludgeoning},
-        { 1517,  6424,   35,  bludgeoning, 13, none, none},
-        { 1368,  9039,   53,  slashing,     4, bludgeoning, none},
-        { 3712,  5377,   14,  slashing,    14, cold | radiation, fire},
-        { 3165,  8703,   26,  radiation,   11, none, slashing | bludgeoning},*/
-
+        {1, 790 ,  3941,   48,  bludgeoning,  5, none, none                         , -1, -1},
+        {2, 624 ,  2987,   46,  bludgeoning, 16, none, none                         , -1, -1},
+        {3, 5724,  9633,   16,  slashing,     9, bludgeoning | slashing | fire, none, -1, -1},
+        {4, 1033,  10664,  89,  slashing,     1, none, none                         , -1, -1},
+        {5, 6691,  9773,   13,  bludgeoning, 12, none, slashing                     , -1, -1},
+        {6, 325 ,  11916, 276,  slashing,     8, none, bludgeoning                  , -1, -1},
+        {7, 1517,  6424,   35,  bludgeoning, 13, none, none                         , -1, -1},
+        {8, 1368,  9039,   53,  slashing,     4, bludgeoning, none                  , -1, -1},
+        {9, 3712,  5377,   14,  slashing,    14, cold | radiation, fire             , -1, -1},
+        {10, 3165,  8703,  26,  radiation,   11, none, slashing | bludgeoning       , -1, -1},
         // test
-        {1, 17, 5390, 4507, fire, 2, none, radiation | bludgeoning, -1   , -1},
-        {2, 989, 1274, 25, slashing, 3, fire, bludgeoning | slashing , -1, -1},
+        // {1, 17, 5390, 4507, fire, 2, none, radiation | bludgeoning, -1   , -1},
+        // {2, 989, 1274, 25, slashing, 3, fire, bludgeoning | slashing , -1, -1},
     };
 
     vector<Group> infection = {
-        /*{ 1113,  44169, 57 , fire       , 7,  bludgeoning, radiation},
-        { 3949,  20615, 9  , bludgeoning, 6,  none, radiation | cold},
-        { 602 ,  35167, 93 , radiation  , 20, bludgeoning | cold, fire},
-        { 1209,  34572, 55 , bludgeoning, 3,  none, none},
-        { 902 ,  12983, 28 , fire       , 19, fire, none},
-        { 1132,  51353, 66 , radiation  , 15, none, none},
-        { 7966,  49894, 9  , cold       , 10, bludgeoning, none},
-        { 3471,  18326, 8  , fire       , 18, none, radiation},
-        { 110 ,  38473, 640, slashing   , 2 , fire, bludgeoning},
-        { 713 ,  42679, 102, bludgeoning, 17, none, slashing},*/
-
+        {11, 1113,  44169, 57 , fire       , 7,  bludgeoning, radiation  , -1, -1},
+        {12, 3949,  20615, 9  , bludgeoning, 6,  none, radiation | cold  , -1, -1},
+        {13, 602 ,  35167, 93 , radiation  , 20, bludgeoning | cold, fire, -1, -1},
+        {14, 1209,  34572, 55 , bludgeoning, 3,  none, none              , -1, -1},
+        {15, 902 ,  12983, 28 , fire       , 19, fire, none              , -1, -1},
+        {16, 1132,  51353, 66 , radiation  , 15, none, none              , -1, -1},
+        {17, 7966,  49894, 9  , cold       , 10, bludgeoning, none       , -1, -1},
+        {18, 3471,  18326, 8  , fire       , 18, none, radiation         , -1, -1},
+        {19, 110 ,  38473, 640, slashing   , 2 , fire, bludgeoning       , -1, -1},
+        {20, 713 ,  42679, 102, bludgeoning, 17, none, slashing          , -1, -1},
         // test
-        {3, 801, 4706, 116, bludgeoning, 1, none, radiation    , -1, -1 },
-        {4, 4485, 2961, 12, slashing, 4, radiation, fire | cold, -1, -1 },
+        // {3, 801, 4706, 116, bludgeoning, 1, none, radiation    , -1, -1 },
+        // {4, 4485, 2961, 12, slashing, 4, radiation, fire | cold, -1, -1 },
     };
 
     unordered_map<int, Group*> groupIdMap;
@@ -309,13 +307,11 @@ int main(int argc, char** argv) {
     for (Group& grp : immuneSys) {
         if (grp.numUnits > 0) {
             score += grp.numUnits;
-            cout << grp.numUnits << endl;        
         }
     }
     for (Group& grp : infection) {
         if (grp.numUnits > 0) {
             score += grp.numUnits;
-            cout << grp.numUnits << endl;     
         }
     }
     cout << "Score: " << score << endl;
