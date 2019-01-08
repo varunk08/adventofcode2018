@@ -197,8 +197,8 @@ int main(int argc, char** argv) {
 
     // target phase
     //effective power: the number of units in that group multiplied by their attack damage
-    cout << "Immune attacks" << endl; Target(immuneSys, infection, groupIdMap);
-    cout << "Infection attacks" << endl; Target(infection, immuneSys, groupIdMap);
+    Target(immuneSys, infection, groupIdMap);
+    Target(infection, immuneSys, groupIdMap);
 
 
     // for (auto it = groupIdMap.begin(); it != groupIdMap.end(); it++) {
@@ -283,5 +283,19 @@ int main(int argc, char** argv) {
     }
 
 }
+
+    int score = 0;
+    for (Group& grp : immuneSys) {
+        if (grp.numUnits > 0) {
+            score += grp.numUnits;            
+        }
+    }
+    for (Group& grp : infection) {
+        if (grp.numUnits > 0) {
+            score += grp.numUnits;            
+        }
+    }
+    cout << "Score: " << score << endl;
+
     return 0;
 }
