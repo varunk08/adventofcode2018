@@ -71,8 +71,8 @@ void Target(vector<Group>& attackers, vector<Group>& defenders, unordered_map<in
             if (curDefender.weakness  & curAttacker.atkType) {
                 curDmg *= 2;
             }
-
-            if (curDefender.immunity & curAttacker.atkType || (curDefender.numUnits <= 0)) {
+            
+            if ((curDefender.immunity & curAttacker.atkType) || (curDefender.numUnits <= 0)) {
                 curDmg = 0;
                 continue;
             }
@@ -112,7 +112,7 @@ void Target(vector<Group>& attackers, vector<Group>& defenders, unordered_map<in
 }
 
 void PerformAttack(Group* pAttacker, Group* pDefender) {
-        if (pAttacker->numUnits <= 0) {
+        if (pAttacker->numUnits <= 0 || pAttacker->attackId == -1) {
             return;
         }
 
@@ -167,8 +167,30 @@ int main(int argc, char** argv) {
     unordered_map<int, Group*> groupIdMap;
     bool enemyRemains = true;
     int round =  0;
+    
     while (enemyRemains) {
-    cout << "Round " << ++round << endl;
+    cout << endl << "Round " << ++round << endl;
+
+    // sort by effective power
+    auto sortByEffPwr = [](const Group& A, const Group& B) {
+        if ((A.numUnits * A.attack) == (B.numUnits * B.attack)) {
+            return A.initiative > B.initiative;
+        } else {
+            return ((A.numUnits * A.attack) > (B.numUnits * B.attack));
+        }
+    };
+    sort(immuneSys.begin(), immuneSys.end(), sortByEffPwr);
+    sort(infection.begin(), infection.end(), sortByEffPwr);
+
+    // clear the attackers and defenders
+    for (Group& grp : immuneSys) {
+        grp.attackId = -1;
+        grp.defId    = -1;
+    }
+    for (Group& grp : infection) {
+        grp.attackId = -1;
+        grp.defId    = -1;
+    }
 
     groupIdMap.clear();
     for (Group& grp : immuneSys) {
@@ -178,28 +200,11 @@ int main(int argc, char** argv) {
         groupIdMap.emplace(grp.id, &grp);
     }
 
-    // sort by effective power
-    sort(immuneSys.begin(), immuneSys.end(), [](const Group& A, const Group& B) {
-        if ((A.numUnits * A.attack) == (B.numUnits * B.attack)) {
-            return A.initiative > B.initiative;
-        } else {
-            return ((A.numUnits * A.attack) > (B.numUnits * B.attack));
-        }
-    });
-
-    sort(infection.begin(), infection.end(), [](const Group& A, const Group& B) {
-        if ((A.numUnits * A.attack) == (B.numUnits * B.attack)) {
-            return A.initiative > B.initiative;
-        } else {
-            return ((A.numUnits * A.attack) > (B.numUnits * B.attack));
-        }
-    });
-
     // target phase
     //effective power: the number of units in that group multiplied by their attack damage
     Target(immuneSys, infection, groupIdMap);
     Target(infection, immuneSys, groupIdMap);
-
+    cout << "Done targeting" << endl;
 
     // for (auto it = groupIdMap.begin(); it != groupIdMap.end(); it++) {
     //     cout << "id: " << it->first << " attacks " << it->second->attackId << " defs " <<it->second->defId << endl;
@@ -230,11 +235,17 @@ int main(int argc, char** argv) {
         // cout << "current initiatives " <<  initA << " " << initB << endl;
         if (initA > initB) {
             pAttacker = &immuneSys[i];
-            pDefender = groupIdMap.find(pAttacker->attackId)->second;
+
+            if (pAttacker->attackId != -1) {
+                pDefender = groupIdMap.find(pAttacker->attackId)->second;
+            }
             i++;
         } else {
             pAttacker = &infection[j];
-            pDefender = groupIdMap.find(pAttacker->attackId)->second;
+
+            if (pAttacker->attackId != -1) {
+                pDefender = groupIdMap.find(pAttacker->attackId)->second;
+            }
             j++;
         }
 
@@ -261,6 +272,16 @@ int main(int argc, char** argv) {
         i++;
     }
     
+    // debug print
+    cout << "immune units: " << endl;
+    for (Group& grp : immuneSys) {
+        cout << grp.numUnits << endl;
+    }
+    cout << "infection units: " << endl;
+    for (Group& grp : infection) {
+        cout << grp.numUnits << endl;
+    }
+
     // check if units remain
     enemyRemains = false;
     for (Group& grp : immuneSys) {
@@ -287,12 +308,14 @@ int main(int argc, char** argv) {
     int score = 0;
     for (Group& grp : immuneSys) {
         if (grp.numUnits > 0) {
-            score += grp.numUnits;            
+            score += grp.numUnits;
+            cout << grp.numUnits << endl;        
         }
     }
     for (Group& grp : infection) {
         if (grp.numUnits > 0) {
-            score += grp.numUnits;            
+            score += grp.numUnits;
+            cout << grp.numUnits << endl;     
         }
     }
     cout << "Score: " << score << endl;
