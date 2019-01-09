@@ -32,302 +32,363 @@ using namespace std;
 //110 units each with  38473 hit points (weak to bludgeoning; immune to fire) with an attack that does 640 slashing damage at initiative 2
 //713 units each with  42679 hit points (weak to slashing) with an attack that does 102 bludgeoning damage at initiative 17
 
-enum AtkType {
-    none            = 0x0,
-    bludgeoning     = 0x1,
-    slashing        = 0x2,
-    fire            = 0x4,
-    radiation       = 0x8,
-    cold            = 0x10
+enum AtkType
+{
+    none = 0x0,
+    bludgeoning = 0x1,
+    slashing = 0x2,
+    fire = 0x4,
+    radiation = 0x8,
+    cold = 0x10
 };
 
-struct Group {
+struct Group
+{
     int id;
     int numUnits;
     int unitHp;
-    int attack;             // per unit attack
+    int attack; // per unit attack
     AtkType atkType;
     int initiative;
     int immunity;
     int weakness;
     int attackId;
-    int defId;             // Need to defend against this enemy group
+    int defId; // Need to defend against this enemy group
 };
 
-void Target(vector<Group>& attackers, vector<Group>& defenders, unordered_map<int, Group*>& groupIdMap) {
-    for (int i = 0; i < attackers.size(); i++) {
-        int maxDmg         = numeric_limits<int>::min();
+void Target(vector<Group> &attackers, vector<Group> &defenders, unordered_map<int, Group *> &groupIdMap)
+{
+    for (int i = 0; i < attackers.size(); i++)
+    {
+        int maxDmg = numeric_limits<int>::min();
         int prevInitiative = numeric_limits<int>::min();
-        int prevEffPower   = numeric_limits<int>::min();
-        Group& curAttacker = attackers[i];
-        int curDmg         = 0;
+        int prevEffPower = numeric_limits<int>::min();
+        Group &curAttacker = attackers[i];
+        int curDmg = 0;
 
-        if (curAttacker.numUnits <= 0) {
+        if (curAttacker.numUnits <= 0)
+        {
             continue;
         }
 
-        // calc dmg to each unit
-        for (int j = 0; j < defenders.size(); j++) {
-            curDmg         = curAttacker.numUnits * curAttacker.attack;
-            Group& curDefender = defenders[j];
+        for (int j = 0; j < defenders.size(); j++)
+        {
+            curDmg = curAttacker.numUnits * curAttacker.attack;
+            Group &curDefender = defenders[j];
             int enemyEffPwr = curDefender.numUnits * curDefender.attack;
-        
-            if (curDefender.weakness  & curAttacker.atkType) {
+
+            if (curDefender.weakness & curAttacker.atkType)
+            {
                 curDmg += curDmg;
             }
-            
-            if ((curDefender.immunity & curAttacker.atkType) || (curDefender.numUnits <= 0) || (curDefender.defId != -1)) {
+
+            if ((curDefender.immunity & curAttacker.atkType) || (curDefender.numUnits <= 0) || (curDefender.defId != -1))
+            {
                 continue;
             }
-            
-            //cout << curDefender.id << endl;
-            //cout << "grp " << curAttacker.id << " : " << curDmg << " to infection " << curDefender.id << endl;
 
-            if (maxDmg <= curDmg) {
-                if (maxDmg == curDmg) {
+            if (maxDmg <= curDmg)
+            {
+                if (maxDmg == curDmg)
+                {
                     if ((enemyEffPwr < prevEffPower) ||
-                        (enemyEffPwr == prevEffPower && prevInitiative > curDefender.initiative)) {
+                        (enemyEffPwr == prevEffPower && prevInitiative > curDefender.initiative))
+                    {
                         continue;
                     }
                 }
 
-                if (curAttacker.attackId != -1) {
-                    //cout << "changin already attacking " << curAttacker.attackId << " by " << curAttacker.id << endl;
-                    //cout << groupIdMap.find(curAttacker.attackId)->second->defId  << endl;
+                if (curAttacker.attackId != -1)
+                {
                     groupIdMap.find(curAttacker.attackId)->second->defId = -1;
                 }
 
-                prevInitiative       = curDefender.initiative;
-                maxDmg               = curDmg;
+                prevInitiative = curDefender.initiative;
+                maxDmg = curDmg;
                 curAttacker.attackId = curDefender.id;
-                prevEffPower         = enemyEffPwr;
-                curDefender.defId    = curAttacker.id;
-                // cout << "cur defender: " << "init: " << curDefender.initiative << " def id: " << curDefender.id << " defends " <<  curDefender.defId << endl;
-            } 
+                prevEffPower = enemyEffPwr;
+                curDefender.defId = curAttacker.id;
+            }
         }
-
-        // cout << "group " << curAttacker.id << " attacks " << curAttacker.attackId << " for " << curDmg << endl;
     }
 }
 
-void PerformAttack(Group* pAttacker, Group* pDefender) {
-        if (pAttacker->numUnits <= 0 || pAttacker->attackId == -1 || pDefender->numUnits <= 0) {
-            return;
-        }
+void PerformAttack(Group *pAttacker, Group *pDefender)
+{
+    if (pAttacker->numUnits <= 0 || pAttacker->attackId == -1 || pDefender->numUnits <= 0)
+    {
+        return;
+    }
 
-        int curDmg = pAttacker->numUnits * pAttacker->attack;
-        if (pDefender->immunity & pAttacker->atkType || pDefender->numUnits <= 0) {
-            curDmg = 0;
-        }
-        if (pDefender->weakness & pAttacker->atkType) {
-            curDmg += curDmg;
-        }
-        int before = pDefender->numUnits;
-        int remHp = (pDefender->numUnits * pDefender->unitHp) - curDmg;
-        pDefender->numUnits = ceil(static_cast<float>(remHp) / pDefender->unitHp);
+    int curDmg = pAttacker->numUnits * pAttacker->attack;
+    if (pDefender->immunity & pAttacker->atkType || pDefender->numUnits <= 0)
+    {
+        curDmg = 0;
+    }
+    if (pDefender->weakness & pAttacker->atkType)
+    {
+        curDmg += curDmg;
+    }
+    int before = pDefender->numUnits;
+    int remHp = (pDefender->numUnits * pDefender->unitHp) - curDmg;
+    pDefender->numUnits = ceil(static_cast<float>(remHp) / pDefender->unitHp);
 
-        if (pDefender->numUnits <= 0) {
-            pDefender->defId    = -1;
-            pAttacker->attackId = -1;
-        }
-        cout << pAttacker->id << "->" << pDefender->id <<  ": num units rem: " << pDefender->numUnits << "/ " << before << endl;
+    if (pDefender->numUnits <= 0)
+    {
+        pDefender->defId = -1;
+        pAttacker->attackId = -1;
+    }
+    // cout << pAttacker->id << "->" << pDefender->id <<  ": num units rem: " << pDefender->numUnits << "/ " << before << endl;
 }
 const int boost = 1570;
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     vector<Group> immuneSys = {
-        // {1, 790 ,  3941,   48,  bludgeoning,  5, none, none                         , -1, -1},
-        // {2, 624 ,  2987,   46,  bludgeoning, 16, none, none                         , -1, -1},
-        // {3, 5724,  9633,   16,  slashing,     9, bludgeoning | slashing | fire, none, -1, -1},
-        // {4, 1033,  10664,  89,  slashing,     1, none, none                         , -1, -1},
-        // {5, 6691,  9773,   13,  bludgeoning, 12, none, slashing                     , -1, -1},
-        // {6, 325 ,  11916, 276,  slashing,     8, none, bludgeoning                  , -1, -1},
-        // {7, 1517,  6424,   35,  bludgeoning, 13, none, none                         , -1, -1},
-        // {8, 1368,  9039,   53,  slashing,     4, bludgeoning, none                  , -1, -1},
-        // {9, 3712,  5377,   14,  slashing,    14, cold | radiation, fire             , -1, -1},
-        // {10, 3165,  8703,  26,  radiation,   11, none, slashing | bludgeoning       , -1, -1},
+        {1, 790, 3941, 48, bludgeoning, 5, none, none, -1, -1},
+        {2, 624, 2987, 46, bludgeoning, 16, none, none, -1, -1},
+        {3, 5724, 9633, 16, slashing, 9, bludgeoning | slashing | fire, none, -1, -1},
+        {4, 1033, 10664, 89, slashing, 1, none, none, -1, -1},
+        {5, 6691, 9773, 13, bludgeoning, 12, none, slashing, -1, -1},
+        {6, 325, 11916, 276, slashing, 8, none, bludgeoning, -1, -1},
+        {7, 1517, 6424, 35, bludgeoning, 13, none, none, -1, -1},
+        {8, 1368, 9039, 53, slashing, 4, bludgeoning, none, -1, -1},
+        {9, 3712, 5377, 14, slashing, 14, cold | radiation, fire, -1, -1},
+        {10, 3165, 8703, 26, radiation, 11, none, slashing | bludgeoning, -1, -1},
         // test
-        {1, 17, 5390, 4507 + boost, fire, 2, none, radiation | bludgeoning, -1   , -1},
-        {2, 989, 1274, 25 + boost, slashing, 3, fire, bludgeoning | slashing , -1, -1},
+        // {1, 17, 5390, 4507, fire, 2, none, radiation | bludgeoning, -1   , -1},
+        // {2, 989, 1274, 25, slashing, 3, fire, bludgeoning | slashing , -1, -1},
     };
 
     vector<Group> infection = {
-        // {11, 1113,  44169, 57 , fire       , 7,  bludgeoning, radiation  , -1, -1},
-        // {12, 3949,  20615, 9  , bludgeoning, 6,  none, radiation | cold  , -1, -1},
-        // {13, 602 ,  35167, 93 , radiation  , 20, bludgeoning | cold, fire, -1, -1},
-        // {14, 1209,  34572, 55 , bludgeoning, 3,  none, none              , -1, -1},
-        // {15, 902 ,  12983, 28 , fire       , 19, fire, none              , -1, -1},
-        // {16, 1132,  51353, 66 , radiation  , 15, none, none              , -1, -1},
-        // {17, 7966,  49894, 9  , cold       , 10, bludgeoning, none       , -1, -1},
-        // {18, 3471,  18326, 8  , fire       , 18, none, radiation         , -1, -1},
-        // {19, 110 ,  38473, 640, slashing   , 2 , fire, bludgeoning       , -1, -1},
-        // {20, 713 ,  42679, 102, bludgeoning, 17, none, slashing          , -1, -1},
+        {11, 1113, 44169, 57, fire, 7, bludgeoning, radiation, -1, -1},
+        {12, 3949, 20615, 9, bludgeoning, 6, none, radiation | cold, -1, -1},
+        {13, 602, 35167, 93, radiation, 20, bludgeoning | cold, fire, -1, -1},
+        {14, 1209, 34572, 55, bludgeoning, 3, none, none, -1, -1},
+        {15, 902, 12983, 28, fire, 19, fire, none, -1, -1},
+        {16, 1132, 51353, 66, radiation, 15, none, none, -1, -1},
+        {17, 7966, 49894, 9, cold, 10, bludgeoning, none, -1, -1},
+        {18, 3471, 18326, 8, fire, 18, none, radiation, -1, -1},
+        {19, 110, 38473, 640, slashing, 2, fire, bludgeoning, -1, -1},
+        {20, 713, 42679, 102, bludgeoning, 17, none, slashing, -1, -1},
         // test
-        {3, 801, 4706, 116, bludgeoning, 1, none, radiation    , -1, -1 },
-        {4, 4485, 2961, 12, slashing, 4, radiation, fire | cold, -1, -1 },
+        // {3, 801, 4706, 116, bludgeoning, 1, none, radiation    , -1, -1 },
+        // {4, 4485, 2961, 12, slashing, 4, radiation, fire | cold, -1, -1 },
     };
 
-    unordered_map<int, Group*> groupIdMap;
+    unordered_map<int, Group *> groupIdMap;
     bool enemyRemains = true;
-    int round =  0;
-    
-    while (enemyRemains) {
-    ++round;
-    cout << endl << "Round " << round << endl;
-    
-    // sort by effective power
-    auto sortByEffPwr = [](const Group& A, const Group& B) {
-        if ((A.numUnits * A.attack) == (B.numUnits * B.attack)) {
-            return A.initiative > B.initiative;
-        } else {
-            return ((A.numUnits * A.attack) > (B.numUnits * B.attack));
+    int round = 0;
+    int bonus = 35;
+    bool immuneDiedFirst = true;
+
+    vector<Group> tempImmune = immuneSys;
+    vector<Group> tempInfect = infection;
+
+    while (immuneDiedFirst)
+    {
+        bonus++;
+        cout << "Bonus: " << bonus << endl;
+
+        immuneSys = tempImmune;
+        infection = tempInfect;
+
+        for (Group &grp : immuneSys)
+        {
+            grp.attack += bonus;
         }
-    };
-    sort(immuneSys.begin(), immuneSys.end(), sortByEffPwr);
-    sort(infection.begin(), infection.end(), sortByEffPwr);
+        round = 0;
+        enemyRemains = true;
 
-    // clear the attackers and defenders
-    for (Group& grp : immuneSys) {
-        grp.attackId = -1;
-        grp.defId    = -1;
-    }
-    for (Group& grp : infection) {
-        grp.attackId = -1;
-        grp.defId    = -1;
-    }
+        while (enemyRemains)
+        {
+            ++round;
+            // cout << endl << "Round " << round << endl;
 
-    groupIdMap.clear();
-    for (Group& grp : immuneSys) {
-        groupIdMap.emplace(grp.id, &grp);
-    }
-    for (Group& grp : infection) {
-        groupIdMap.emplace(grp.id, &grp);
-    }
+            // sort by effective power
+            auto sortByEffPwr = [](const Group &A, const Group &B) {
+                if ((A.numUnits * A.attack) == (B.numUnits * B.attack))
+                {
+                    return A.initiative > B.initiative;
+                }
+                else
+                {
+                    return ((A.numUnits * A.attack) > (B.numUnits * B.attack));
+                }
+            };
+            sort(immuneSys.begin(), immuneSys.end(), sortByEffPwr);
+            sort(infection.begin(), infection.end(), sortByEffPwr);
 
-    // target phase
-    //effective power: the number of units in that group multiplied by their attack damage
-    Target(immuneSys, infection, groupIdMap);
-    Target(infection, immuneSys, groupIdMap);
-    cout << "Done targeting" << endl;
-
-    // for (auto it = groupIdMap.begin(); it != groupIdMap.end(); it++) {
-    //     cout << "id: " << it->first << " attacks " << it->second->attackId << " defs " <<it->second->defId << endl;
-    // }
-
-    // attack phase
-    // sort by initiative
-    auto sortByInit = [](const Group& A, const Group& B) { return A.initiative > B.initiative; };
-    sort(immuneSys.begin(), immuneSys.end(), sortByInit);
-    sort(infection.begin(), infection.end(), sortByInit);
-
-    groupIdMap.clear();
-    for (Group& grp : immuneSys) {
-        groupIdMap.emplace(grp.id, &grp);
-    }
-    for (Group& grp : infection) {
-        groupIdMap.emplace(grp.id, &grp);
-    }
-
-    int i = 0, j = 0;
-    while (i < immuneSys.size() && j < infection.size()) {
-        int initA = immuneSys[i].initiative;
-        int initB = infection[j].initiative;
-
-        Group* pAttacker = nullptr;
-        Group* pDefender = nullptr;
-        // cout << "current initiatives " <<  initA << " " << initB << endl;
-        if (initA > initB) {
-            pAttacker = &immuneSys[i];
-
-            if (pAttacker->attackId != -1) {
-                pDefender = groupIdMap.find(pAttacker->attackId)->second;
+            // clear the attackers and defenders
+            for (Group &grp : immuneSys)
+            {
+                grp.attackId = -1;
+                grp.defId = -1;
             }
-            i++;
-        } else {
-            pAttacker = &infection[j];
-
-            if (pAttacker->attackId != -1) {
-                pDefender = groupIdMap.find(pAttacker->attackId)->second;
+            for (Group &grp : infection)
+            {
+                grp.attackId = -1;
+                grp.defId = -1;
             }
-            j++;
+            groupIdMap.clear();
+            for (Group &grp : immuneSys)
+            {
+                groupIdMap.emplace(grp.id, &grp);
+            }
+            for (Group &grp : infection)
+            {
+                groupIdMap.emplace(grp.id, &grp);
+            }
+
+            // target phase
+            Target(immuneSys, infection, groupIdMap);
+            Target(infection, immuneSys, groupIdMap);
+
+            // attack phase
+            auto sortByInit = [](const Group &A, const Group &B) { return A.initiative > B.initiative; };
+            sort(immuneSys.begin(), immuneSys.end(), sortByInit);
+            sort(infection.begin(), infection.end(), sortByInit);
+
+            groupIdMap.clear();
+            for (Group &grp : immuneSys)
+            {
+                groupIdMap.emplace(grp.id, &grp);
+            }
+            for (Group &grp : infection)
+            {
+                groupIdMap.emplace(grp.id, &grp);
+            }
+
+            int i = 0, j = 0;
+            while (i < immuneSys.size() && j < infection.size())
+            {
+                int initA = immuneSys[i].initiative;
+                int initB = infection[j].initiative;
+                Group *pAttacker = nullptr;
+                Group *pDefender = nullptr;
+                if (initA > initB)
+                {
+                    pAttacker = &immuneSys[i];
+                    if (pAttacker->attackId != -1)
+                    {
+                        pDefender = groupIdMap.find(pAttacker->attackId)->second;
+                    }
+                    i++;
+                }
+                else
+                {
+                    pAttacker = &infection[j];
+                    if (pAttacker->attackId != -1)
+                    {
+                        pDefender = groupIdMap.find(pAttacker->attackId)->second;
+                    }
+                    j++;
+                }
+
+                PerformAttack(pAttacker, pDefender);
+            }
+
+            vector<Group> *pRem = nullptr;
+            vector<Group> *pDef = nullptr;
+            if (i == immuneSys.size())
+            {
+                pRem = &infection;
+                pDef = &immuneSys;
+                i = j;
+            }
+            else
+            {
+                pRem = &immuneSys;
+                pDef = &infection;
+            }
+
+            while (i < pRem->size())
+            {
+                Group *pAttacker = &pRem->at(i);
+                Group *pDefender = nullptr;
+                if (pAttacker->numUnits <= 0)
+                {
+                    break;
+                }
+                if (pAttacker->attackId != -1)
+                {
+                    pDefender = groupIdMap.find(pAttacker->attackId)->second;
+                }
+                PerformAttack(pAttacker, pDefender);
+                i++;
+            }
+
+            // debug print
+            // cout << "immune units: " << endl;
+            // for (Group& grp : immuneSys) {
+            //     cout << grp.numUnits << endl;
+            // }
+            // cout << "infection units: " << endl;
+            // for (Group& grp : infection) {
+            //     cout << grp.numUnits << endl;
+            // }
+
+            // check if units remain
+            enemyRemains = false;
+            immuneDiedFirst = false;
+            for (Group &grp : immuneSys)
+            {
+                if (grp.numUnits > 0)
+                {
+                    enemyRemains = true;
+                    break;
+                }
+            }
+
+            if (enemyRemains == false)
+            {
+                immuneDiedFirst = true;
+                // cout << "Immune died first" << endl;
+                break;
+            }
+
+            enemyRemains = false;
+            for (Group &grp : infection)
+            {
+                if (grp.numUnits > 0)
+                {
+                    enemyRemains = true;
+                    break;
+                }
+            }
+
+            if (enemyRemains == false)
+            {
+                cout << "Infection died first" << endl;
+                cout << "Boost: " << bonus << endl;
+                immuneDiedFirst = false;
+                break;
+            }
         }
-
-        // cout << "attacker: " << " id: " << pAttacker->id << " init: " <<pAttacker->initiative << endl
-        //      << "defender " << " id: " << pDefender->id  << " init: " << pDefender->initiative << endl;
-        PerformAttack(pAttacker, pDefender);
     }
 
-    vector<Group>* pRem  = nullptr;
-    vector<Group>* pDef = nullptr;
-    if (i == immuneSys.size()) {
-        pRem = &infection;
-        pDef = &immuneSys;
-        i = j;
-    } else {
-        pRem = &immuneSys;
-        pDef = &infection;
-    }
-
-    while(i < pRem->size()) {
-        Group* pAttacker = &pRem->at(i);
-        if (pAttacker->numUnits <= 0) {
-            break;
-        }
-        Group* pDefender = groupIdMap.find(pAttacker->attackId)->second;
-        PerformAttack(pAttacker, pDefender);
-        i++;
-    }
-    
-    // debug print
     cout << "immune units: " << endl;
-    for (Group& grp : immuneSys) {
+    for (Group &grp : immuneSys)
+    {
         cout << grp.numUnits << endl;
     }
     cout << "infection units: " << endl;
-    for (Group& grp : infection) {
-        cout << grp.numUnits << endl;
-    }
-
-    // check if units remain
-    enemyRemains = false;
-    for (Group& grp : immuneSys) {
-        if (grp.numUnits > 0) {
-            enemyRemains = true;
-            break;
-        }
-    }
-
-    if (enemyRemains == false) {
-        break;
-    }
-
-    enemyRemains = false;
-    for (Group& grp : infection) {
-        if (grp.numUnits > 0) {
-            enemyRemains = true;
-            break;
-        }
-    }
-
-}
-
-    // debug print
-    cout << "immune units: " << endl;
-    for (Group& grp : immuneSys) {
-        cout << grp.numUnits << endl;
-    }
-    cout << "infection units: " << endl;
-    for (Group& grp : infection) {
+    for (Group &grp : infection)
+    {
         cout << grp.numUnits << endl;
     }
 
     int score = 0;
-    for (Group& grp : immuneSys) {
-        if (grp.numUnits > 0) {
+    for (Group &grp : immuneSys)
+    {
+        if (grp.numUnits > 0)
+        {
             score += grp.numUnits;
         }
     }
-    for (Group& grp : infection) {
-        if (grp.numUnits > 0) {
+    for (Group &grp : infection)
+    {
+        if (grp.numUnits > 0)
+        {
             score += grp.numUnits;
         }
     }
